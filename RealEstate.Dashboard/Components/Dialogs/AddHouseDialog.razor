@@ -1,0 +1,56 @@
+﻿@using RealEstate.Dashboard.Models
+
+<MudDialog>
+
+    <DialogContent>
+        <MudText Typo="Typo.h6">Yeni Ev Ekle</MudText>
+
+        <MudGrid Spacing="3">
+
+            <MudItem xs="12">
+                <MudTextField T="string"
+                              Label="Başlık"
+                              @bind-Value="_house.Title"
+                              FullWidth />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField T="string"
+                              Label="Şehir"
+                              @bind-Value="_house.City"
+                              FullWidth />
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudTextField T="decimal"
+                              Label="Fiyat"
+                              @bind-Value="_house.Price"
+                              FullWidth />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Save">Kaydet</MudButton>
+        <MudButton OnClick="Cancel">İptal</MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    public IMudDialogInstance MudDialog { get; set; } = default!;
+
+    House _house = new();
+
+    void Save()
+    {
+        MudDialog.Close(DialogResult.Ok(_house));
+    }
+
+    void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

@@ -1,0 +1,89 @@
+﻿@page "/houses"
+@using MudBlazor
+@using RealEstate.Dashboard.Components.Dialogs
+@using RealEstate.Dashboard.Models
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.False">
+
+    <!-- ÜST BAŞLIK + YENİ EKLE -->
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudText Typo="Typo.h5">Evlerim</MudText>
+
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog">
+            Yeni Ekle
+        </MudButton>
+    </MudStack>
+
+    <MudTable Items="_houses" Hover="true" Class="mt-4">
+
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Başlık</MudTh>
+            <MudTh>Şehir</MudTh>
+            <MudTh>Fiyat</MudTh>
+            <MudTh>İşlemler</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd>@context.Id</MudTd>
+            <MudTd>@context.Title</MudTd>
+            <MudTd>@context.City</MudTd>
+            <MudTd>@context.Price ₺</MudTd>
+            <MudTd>
+                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                               Color="Color.Info"
+                               OnClick="() => EditHouse(context)" />
+
+                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                               Color="Color.Error"
+                               OnClick="() => DeleteHouse(context)" />
+            </MudTd>
+        </RowTemplate>
+
+    </MudTable>
+
+</MudContainer>
+
+@code {
+
+    List<House> _houses = new()
+    {
+        new House { Id = 1, Title = "3+1 Daire", City = "İstanbul", Price = 2500000 },
+        new House { Id = 2, Title = "2+1 Daire", City = "Ankara", Price = 1800000 }
+    };
+
+    async Task OpenAddDialog()
+    {
+        var dialog = DialogService.Show<AddHouseDialog>(" ");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var newHouse = (House)result.Data!;
+            newHouse.Id = _houses.Max(x => x.Id) + 1;
+            _houses.Add(newHouse);
+
+            Snackbar.Add("Ev başarıyla eklendi", Severity.Success);
+        }
+    }
+
+    void EditHouse(House house)
+    {
+        Snackbar.Add($"{house.Title} güncellenecek", Severity.Info);
+    }
+
+    void DeleteHouse(House house)
+    {
+        _houses.Remove(house);
+        Snackbar.Add($"{house.Title} silindi", Severity.Success);
+    }
+}
+

@@ -1,0 +1,52 @@
+﻿@using MudBlazor
+@inherits LayoutComponentBase
+@inject AuthState Auth
+@inject NavigationManager Navigation
+
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    @if (!Auth.IsAuthenticated)
+    {
+        Navigation.NavigateTo("/login", true);
+    }
+
+    <!-- ÜST BAR -->
+    <MudAppBar Elevation="1">
+        <MudText Typo="Typo.h6">Real Estate Dashboard</MudText>
+    </MudAppBar>
+
+    <!-- SOL MENÜ -->
+    <MudDrawer Open="true" Variant="DrawerVariant.Responsive" Elevation="1">
+        <MudNavMenu>
+
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+                Anasayfa
+            </MudNavLink>
+
+            <MudNavLink Href="/houses" Icon="@Icons.Material.Filled.House">
+                Evlerim
+            </MudNavLink>
+
+            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">
+                Ayarlar
+            </MudNavLink>
+
+            <MudDivider />
+
+            <MudNavLink Icon="@Icons.Material.Filled.Logout">
+                Çıkış
+            </MudNavLink>
+
+        </MudNavMenu>
+    </MudDrawer>
+
+    <!-- SAYFA İÇERİĞİ -->
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+
+</MudLayout>
