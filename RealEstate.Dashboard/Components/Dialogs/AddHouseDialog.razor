@@ -1,4 +1,6 @@
 ﻿@using RealEstate.Dashboard.Models
+@using Microsoft.AspNetCore.Components.Forms
+
 
 <MudDialog>
 
@@ -27,6 +29,17 @@
                               @bind-Value="_house.Price"
                               FullWidth />
             </MudItem>
+            <MudText Typo="Typo.subtitle2" Class="mt-4">
+                Ev Görseli
+            </MudText>
+
+            <InputFile OnChange="OnImageSelected" />
+            <MudTextField T="string"
+                          Label="Açıklama"
+                          Lines="6"
+                          TextArea="true"
+                          @bind-Value="_house.Description"
+                          FullWidth />
         </MudGrid>
     </DialogContent>
 
@@ -39,10 +52,31 @@
 
 @code {
 
+    // Evlerim sayfasından gönderilen ev
+    [Parameter]
+    public House? Model { get; set; }
+
+    // MudBlazor dialog kontrolü
     [CascadingParameter]
     public IMudDialogInstance MudDialog { get; set; } = default!;
 
+    // Formda kullanılan ev (kopya)
     House _house = new();
+
+    protected override void OnInitialized()
+    {
+        // Eğer edit için gelindiyse (Model doluysa)
+        if (Model is not null)
+        {
+            _house = new House
+            {
+                Id = Model.Id,
+                Title = Model.Title,
+                City = Model.City,
+                Price = Model.Price
+            };
+        }
+    }
 
     void Save()
     {
@@ -53,4 +87,20 @@
     {
         MudDialog.Cancel();
     }
+    async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file == null)
+            return;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+        using var ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        _house.ImageUrl = $"data:{file.ContentType};base64,{base64}";
+    }
 }
+

@@ -1,0 +1,67 @@
+﻿@page "/houses/{id:int}"
+
+@using MudBlazor
+@using RealEstate.Dashboard.Models
+@using RealEstate.Dashboard.Data
+
+@inject NavigationManager Navigation
+
+@if (house is null)
+{
+    <MudText>Yükleniyor...</MudText>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+
+        <MudPaper Elevation="3" Class="pa-6">
+
+            <!-- BAŞLIK -->
+            <MudText Typo="Typo.h4" Align="Align.Center">
+                @house.Title
+            </MudText>
+
+            <MudText Typo="Typo.subtitle1"
+                     Align="Align.Center"
+                     Color="Color.Secondary"
+                     Class="mb-4">
+                @house.City • @house.Price ₺
+            </MudText>
+
+            <!-- GÖRSEL -->
+            <MudImage Src="@house.ImageUrl"
+                      Alt="@house.Title"
+                      Elevation="2"
+                      Rounded="true"
+                      Class="mb-6" />
+
+            <!-- AÇIKLAMA -->
+            <MudText Typo="Typo.body1">
+                @house.Description
+            </MudText>
+
+        </MudPaper>
+
+    </MudContainer>
+
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    House? house;
+
+    protected override void OnInitialized()
+    {
+        var houses = FakeHouseData.GetHouses();
+
+        house = houses.FirstOrDefault(x => x.Id == Id);
+
+        if (house is null)
+        {
+            Navigation.NavigateTo("/houses");
+        }
+    }
+}

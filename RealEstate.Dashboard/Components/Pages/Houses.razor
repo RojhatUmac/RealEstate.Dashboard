@@ -1,17 +1,19 @@
 ﻿@page "/houses"
+
 @using MudBlazor
 @using RealEstate.Dashboard.Components.Dialogs
 @using RealEstate.Dashboard.Models
+@using RealEstate.Dashboard.Data
+
 @inject IDialogService DialogService
-@inject ISnackbar Snackbar
-
-
 @inject ISnackbar Snackbar
 
 <MudContainer MaxWidth="MaxWidth.False">
 
     <!-- ÜST BAŞLIK + YENİ EKLE -->
-    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+    <MudStack Row="true"
+              Justify="Justify.SpaceBetween"
+              AlignItems="AlignItems.Center">
         <MudText Typo="Typo.h5">Evlerim</MudText>
 
         <MudButton Color="Color.Primary"
@@ -22,8 +24,10 @@
         </MudButton>
     </MudStack>
 
+    <!-- TABLO -->
     <MudTable Items="_houses" Hover="true" Class="mt-4">
 
+        <!-- TABLO BAŞLIKLARI -->
         <HeaderContent>
             <MudTh>ID</MudTh>
             <MudTh>Başlık</MudTh>
@@ -32,19 +36,27 @@
             <MudTh>İşlemler</MudTh>
         </HeaderContent>
 
-        <RowTemplate>
-            <MudTd>@context.Id</MudTd>
-            <MudTd>@context.Title</MudTd>
-            <MudTd>@context.City</MudTd>
-            <MudTd>@context.Price ₺</MudTd>
+        <!-- TABLO SATIRLARI -->
+        <RowTemplate Context="house">
+            <MudTd>@house.Id</MudTd>
+
+            <MudTd DataLabel="Başlık">
+                <MudLink Href="@($"/houses/{house.Id}")">
+                    @house.Title
+                </MudLink>
+            </MudTd>
+
+            <MudTd>@house.City</MudTd>
+            <MudTd>@house.Price ₺</MudTd>
+
             <MudTd>
                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                               Color="Color.Info"
-                               OnClick="() => EditHouse(context)" />
+                               Color="Color.Primary"
+                               OnClick="@(() => EditHouse(house))" />
 
                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                Color="Color.Error"
-                               OnClick="() => DeleteHouse(context)" />
+                               OnClick="@(() => DeleteHouse(house))" />
             </MudTd>
         </RowTemplate>
 
@@ -54,15 +66,11 @@
 
 @code {
 
-    List<House> _houses = new()
-    {
-        new House { Id = 1, Title = "3+1 Daire", City = "İstanbul", Price = 2500000 },
-        new House { Id = 2, Title = "2+1 Daire", City = "Ankara", Price = 1800000 }
-    };
+    List<House> _houses = FakeHouseData.GetHouses();
 
     async Task OpenAddDialog()
     {
-        var dialog = DialogService.Show<AddHouseDialog>(" ");
+        var dialog = DialogService.Show<AddHouseDialog>("Yeni Ev");
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -75,15 +83,43 @@
         }
     }
 
-    void EditHouse(House house)
-    {
-        Snackbar.Add($"{house.Title} güncellenecek", Severity.Info);
-    }
-
     void DeleteHouse(House house)
     {
         _houses.Remove(house);
         Snackbar.Add($"{house.Title} silindi", Severity.Success);
     }
-}
 
+    async Task EditHouse(House house)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Model", house }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+        var dialog = DialogService.Show<AddHouseDialog>(
+            "Ev Güncelle",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var updatedHouse = (House)result.Data!;
+
+            var index = _houses.FindIndex(x => x.Id == updatedHouse.Id);
+            if (index != -1)
+            {
+                _houses[index] = updatedHouse;
+            }
+
+            Snackbar.Add("Ev başarıyla güncellendi", Severity.Success);
+        }
+    }
+}
