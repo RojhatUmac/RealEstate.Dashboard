@@ -1,14 +1,18 @@
 ﻿public class AuthState
 {
-	public bool IsAuthenticated { get; private set; }
+	public bool IsLoggedIn { get; private set; }
+
+	public event Action? OnChange;
 
 	public void Login()
 	{
-		IsAuthenticated = true;
+		IsLoggedIn = true;
+		OnChange?.Invoke();
 	}
 
 	public void Logout()
 	{
-		IsAuthenticated = false;
+		IsLoggedIn = false;
+		OnChange?.Invoke();
 	}
 }

@@ -1,18 +1,16 @@
 ﻿@using MudBlazor
+@using RealEstate.Dashboard.Data
 @inherits LayoutComponentBase
+@inject ThemeState ThemeState
 @inject AuthState Auth
 @inject NavigationManager Navigation
 
-
-<MudThemeProvider />
+<MudThemeProvider Theme="@AppTheme"
+                  IsDarkMode="@ThemeState.IsDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    @if (!Auth.IsAuthenticated)
-    {
-        Navigation.NavigateTo("/login", true);
-    }
 
     <!-- ÜST BAR -->
     <MudAppBar Elevation="1">
@@ -22,31 +20,69 @@
     <!-- SOL MENÜ -->
     <MudDrawer Open="true" Variant="DrawerVariant.Responsive" Elevation="1">
         <MudNavMenu>
+            <MudNavLink Href="/dashboard"
+                        Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
 
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+            <MudNavLink Href="/"
+                        Match="NavLinkMatch.All"
+                        Icon="@Icons.Material.Filled.Home">
                 Anasayfa
             </MudNavLink>
 
-            <MudNavLink Href="/houses" Icon="@Icons.Material.Filled.House">
+            <MudNavLink Href="/houses"
+                        Icon="@Icons.Material.Filled.House">
                 Evlerim
             </MudNavLink>
 
-            <MudNavLink Href="/settings" Icon="@Icons.Material.Filled.Settings">
+            <MudNavLink Href="/settings"
+                        Icon="@Icons.Material.Filled.Settings">
                 Ayarlar
             </MudNavLink>
-
-            <MudDivider />
-
-            <MudNavLink Icon="@Icons.Material.Filled.Logout">
+            <MudNavLink Icon="@Icons.Material.Filled.Logout"
+                        OnClick="HandleLogout">
                 Çıkış
             </MudNavLink>
 
         </MudNavMenu>
     </MudDrawer>
 
-    <!-- SAYFA İÇERİĞİ -->
+    <!-- SAYFA -->
     <MudMainContent>
         @Body
     </MudMainContent>
 
 </MudLayout>
+
+@code {
+
+    MudTheme AppTheme => new MudTheme
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = Colors.Blue.Default
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = Colors.Blue.Lighten1
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        ThemeState.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        ThemeState.OnChange -= StateHasChanged;
+        
+    }
+    public void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/login", true);
+    }
+}

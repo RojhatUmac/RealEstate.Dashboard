@@ -1,17 +1,22 @@
 ﻿@using RealEstate.Dashboard.Models
 @using Microsoft.AspNetCore.Components.Forms
-
+@using MudBlazor
 
 <MudDialog>
 
     <DialogContent>
-        <MudText Typo="Typo.h6">Yeni Ev Ekle</MudText>
+        <MudText Typo="Typo.h6">
+            @(Model is null ? "Yeni Ev Ekle " : "Ev Güncelle")
+        </MudText>
+      <MudForm @ref="_form">
 
         <MudGrid Spacing="3">
 
             <MudItem xs="12">
                 <MudTextField T="string"
                               Label="Başlık"
+                                  Required="true"
+                                  RequiredError="Başlık zorunludur"
                               @bind-Value="_house.Title"
                               FullWidth />
             </MudItem>
@@ -19,6 +24,8 @@
             <MudItem xs="12" sm="6">
                 <MudTextField T="string"
                               Label="Şehir"
+                                  Required="true"
+                                  RequiredError="Şehir zorunludur"
                               @bind-Value="_house.City"
                               FullWidth />
             </MudItem>
@@ -26,46 +33,90 @@
             <MudItem xs="12" sm="6">
                 <MudTextField T="decimal"
                               Label="Fiyat"
+                                  Min="1"
+                                  MinError="Fiyat 0 olamaz"
                               @bind-Value="_house.Price"
                               FullWidth />
             </MudItem>
-            <MudText Typo="Typo.subtitle2" Class="mt-4">
-                Ev Görseli
-            </MudText>
 
-            <InputFile OnChange="OnImageSelected" />
-            <MudTextField T="string"
-                          Label="Açıklama"
-                          Lines="6"
-                          TextArea="true"
-                          @bind-Value="_house.Description"
-                          FullWidth />
+            <MudItem xs="12">
+                <MudSwitch T="bool"
+                           Label="İlan Aktif mi?"
+                           @bind-Checked="_house.IsActive"
+                           Color="Color.Success" />
+            </MudItem>
+
+            <!-- AÇIKLAMA (STABİL) -->
+            <MudItem xs="12">
+                <MudTextField T="string"
+                              Label="Ev Açıklaması"
+                              Lines="5"
+                              TextArea="true"
+                              @bind-Value="_house.Description"
+                              FullWidth />
+            </MudItem>
+
+            <!-- GÖRSELLER -->
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle2" Class="mt-4">
+                    Ev Görselleri
+                </MudText>
+            </MudItem>
+
+            <MudGrid GutterSize="2">
+                @foreach (var img in _house.Images)
+                {
+                    <MudItem xs="6" sm="4" md="3">
+                        <MudPaper Elevation="2" Class="pa-1" Style="position:relative;">
+                            <MudImage Src="@img"
+                                      Style="width:100%; height:150px; object-fit:cover;" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Style="position:absolute; top:4px; right:4px;"
+                                           OnClick="@(() => RemoveImage(img))" />
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudItem xs="12">
+                <InputFile OnChange="OnImagesSelected" Multiple />
+            </MudItem>
+
         </MudGrid>
+      </MudForm>
+
     </DialogContent>
 
     <DialogActions>
-        <MudButton Color="Color.Primary" OnClick="Save">Kaydet</MudButton>
-        <MudButton OnClick="Cancel">İptal</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Save">
+            Kaydet
+        </MudButton>
+        <MudButton Color="Color.Default" OnClick="Cancel">
+            İptal
+        </MudButton>
     </DialogActions>
 
 </MudDialog>
 
 @code {
 
-    // Evlerim sayfasından gönderilen ev
     [Parameter]
     public House? Model { get; set; }
 
-    // MudBlazor dialog kontrolü
     [CascadingParameter]
     public IMudDialogInstance MudDialog { get; set; } = default!;
-
-    // Formda kullanılan ev (kopya)
-    House _house = new();
+    
+    MudForm? _form;
+    
+    House _house = new()
+    {
+        Images = new List<string>()
+    };
 
     protected override void OnInitialized()
     {
-        // Eğer edit için gelindiyse (Model doluysa)
         if (Model is not null)
         {
             _house = new House
@@ -73,13 +124,27 @@
                 Id = Model.Id,
                 Title = Model.Title,
                 City = Model.City,
-                Price = Model.Price
+                Price = Model.Price,
+                IsActive = Model.IsActive,
+                Description = Model.Description,
+                Images = Model.Images is not null
+                    ? new List<string>(Model.Images)
+                    : new List<string>()
             };
+        }
+        else
+        {
+            _house.IsActive = false; // ❗ yeni eklenen PASİF
         }
     }
 
-    void Save()
+    async Task Save()
     {
+        await _form!.Validate();
+
+        if (!_form.IsValid)
+            return;
+
         MudDialog.Close(DialogResult.Ok(_house));
     }
 
@@ -87,20 +152,22 @@
     {
         MudDialog.Cancel();
     }
-    async Task OnImageSelected(InputFileChangeEventArgs e)
+
+    async Task OnImagesSelected(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
 
-        if (file == null)
-            return;
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            _house.Images.Add($"data:{file.ContentType};base64,{base64}");
+        }
+    }
 
-        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-        using var ms = new MemoryStream();
-
-        await stream.CopyToAsync(ms);
-
-        var base64 = Convert.ToBase64String(ms.ToArray());
-        _house.ImageUrl = $"data:{file.ContentType};base64,{base64}";
+    void RemoveImage(string img)
+    {
+        _house.Images.Remove(img);
     }
 }
-

@@ -1,9 +1,9 @@
 ﻿@page "/houses"
-
+@inject HouseState HouseState
 @using MudBlazor
 @using RealEstate.Dashboard.Components.Dialogs
-@using RealEstate.Dashboard.Models
 @using RealEstate.Dashboard.Data
+@using RealEstate.Dashboard.Models
 
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
@@ -11,9 +11,7 @@
 <MudContainer MaxWidth="MaxWidth.False">
 
     <!-- ÜST BAŞLIK + YENİ EKLE -->
-    <MudStack Row="true"
-              Justify="Justify.SpaceBetween"
-              AlignItems="AlignItems.Center">
+    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudText Typo="Typo.h5">Evlerim</MudText>
 
         <MudButton Color="Color.Primary"
@@ -27,7 +25,6 @@
     <!-- TABLO -->
     <MudTable Items="_houses" Hover="true" Class="mt-4">
 
-        <!-- TABLO BAŞLIKLARI -->
         <HeaderContent>
             <MudTh>ID</MudTh>
             <MudTh>Başlık</MudTh>
@@ -36,11 +33,10 @@
             <MudTh>İşlemler</MudTh>
         </HeaderContent>
 
-        <!-- TABLO SATIRLARI -->
         <RowTemplate Context="house">
             <MudTd>@house.Id</MudTd>
 
-            <MudTd DataLabel="Başlık">
+            <MudTd>
                 <MudLink Href="@($"/houses/{house.Id}")">
                     @house.Title
                 </MudLink>
@@ -66,7 +62,12 @@
 
 @code {
 
-    List<House> _houses = FakeHouseData.GetHouses();
+    List<House> _houses => HouseState.Houses;
+    bool? _activeFilter = true;
+    IEnumerable<House> FilteredHouses =>
+        _activeFilter is null
+            ? HouseState.Houses
+            : HouseState.Houses.Where(x => x.IsActive == _activeFilter);
 
     async Task OpenAddDialog()
     {
@@ -76,9 +77,14 @@
         if (!result.Canceled)
         {
             var newHouse = (House)result.Data!;
-            newHouse.Id = _houses.Max(x => x.Id) + 1;
-            _houses.Add(newHouse);
 
+            //  KRİTİK FIX
+            newHouse.Id = _houses.Any()
+                ? _houses.Max(x => x.Id) + 1
+                : 1;
+
+            _houses.Add(newHouse);
+            HouseState.NotifyStateChanged();
             Snackbar.Add("Ev başarıyla eklendi", Severity.Success);
         }
     }
@@ -86,15 +92,16 @@
     void DeleteHouse(House house)
     {
         _houses.Remove(house);
+        HouseState.NotifyStateChanged();
         Snackbar.Add($"{house.Title} silindi", Severity.Success);
     }
 
     async Task EditHouse(House house)
     {
         var parameters = new DialogParameters
-        {
-            { "Model", house }
-        };
+    {
+        { "Model", house }
+    };
 
         var options = new DialogOptions
         {
@@ -119,6 +126,7 @@
                 _houses[index] = updatedHouse;
             }
 
+            HouseState.NotifyStateChanged();
             Snackbar.Add("Ev başarıyla güncellendi", Severity.Success);
         }
     }

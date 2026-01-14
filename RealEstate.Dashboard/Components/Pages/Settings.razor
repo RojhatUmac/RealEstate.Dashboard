@@ -1,0 +1,28 @@
+﻿@page "/settings"
+@using MudBlazor
+@using RealEstate.Dashboard.Data
+@inject ThemeState ThemeState
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+
+    <MudPaper Class="pa-6">
+
+        <MudText Typo="Typo.h5" Class="mb-4">
+            Ayarlar
+        </MudText>
+
+        <MudSwitch T="bool"
+                   Label="Dark Mode"
+                   Checked="@ThemeState.IsDarkMode"
+                   CheckedChanged="ToggleDark" />
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    void ToggleDark(bool value)
+    {
+        ThemeState.ToggleDarkMode();
+    }
+}

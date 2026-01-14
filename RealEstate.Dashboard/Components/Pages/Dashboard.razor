@@ -1,0 +1,199 @@
+﻿@page "/dashboard"
+@using MudBlazor
+@inject NavigationManager Nav
+@inject HouseState HouseState
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-6">
+
+    <MudGrid Spacing="4">
+
+        <!-- EVLER -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Class="dashboard-card">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Evlerim</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Primary">
+                        @TotalHouses
+                    </MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(() => Nav.NavigateTo("/houses"))">
+                        Git
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <!-- AKTİF -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Class="dashboard-card">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Aktif İlan</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Success">
+                        @ActiveHouses
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- PASİF -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Class="dashboard-card">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Pasif</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Warning">
+                        @PassiveHouses
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- ŞEHİR -->
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Class="dashboard-card">
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">Şehir</MudText>
+                    <MudText Typo="Typo.h4" Color="Color.Info">
+                        @CityCount
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudGrid Spacing="4" Class="mt-6">
+
+            <!-- ŞEHİR GRAFİĞİ -->
+            <MudItem xs="12" md="8">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="mb-2">
+                            Şehirlere Göre İlan Dağılımı
+                        </MudText>
+
+                        @if (!CityChartSeries.Any())
+                        {
+                            <MudText Color="Color.Secondary">
+                                Grafik için yeterli veri yok
+                            </MudText>
+                        }
+                        else
+                        {
+                            <MudChart ChartType="ChartType.Bar"
+                                      ChartSeries="@CityChartSeries"
+                                      XAxisLabels="@CityLabels"
+                                      Height="300px" />
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- AKTİF / PASİF -->
+            <MudItem xs="12" md="4">
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="mb-2">
+                            İlan Durumu
+                        </MudText>
+
+                        <MudChart ChartType="ChartType.Donut"
+                                  ChartSeries="@StatusChartSeries"
+                                  Height="300px" />
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+        </MudGrid>
+
+    </MudGrid>
+
+</MudContainer>
+
+<style>
+    .dashboard-card {
+        height: 160px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+</style>
+
+@code {
+
+    int TotalHouses;
+    int ActiveHouses;
+    int PassiveHouses;
+    int CityCount;
+
+    List<ChartSeries> CityChartSeries = new();
+    string[] CityLabels = [];
+
+    List<ChartSeries> StatusChartSeries = new();
+
+    protected override void OnInitialized()
+    {
+        LoadDashboardData();
+
+        // 🔥 KRİTİK: State değişimini dinle
+        HouseState.OnChange += OnHouseStateChanged;
+    }
+
+    void OnHouseStateChanged()
+    {
+        LoadDashboardData();
+        InvokeAsync(StateHasChanged);
+    }
+
+    void LoadDashboardData()
+    {
+        TotalHouses = HouseState.Houses.Count;
+        ActiveHouses = HouseState.Houses.Count(x => x.IsActive);
+        PassiveHouses = HouseState.Houses.Count(x => !x.IsActive);
+
+        CityCount = HouseState.Houses
+            .Select(x => x.City)
+            .Distinct()
+            .Count();
+
+        var cityGroups = HouseState.Houses
+            .Where(x => !string.IsNullOrWhiteSpace(x.City))
+            .GroupBy(x => x.City)
+            .Select(g => new
+            {
+                City = g.Key,
+                Count = g.Count()
+            })
+            .ToList();
+
+        CityLabels = cityGroups.Select(x => x.City).ToArray();
+
+        CityChartSeries = new()
+        {
+            new ChartSeries
+            {
+                Name = "İlan Sayısı",
+                Data = cityGroups.Select(x => (double)x.Count).ToArray()
+            }
+        };
+
+        StatusChartSeries = new()
+        {
+            new ChartSeries
+            {
+                Name = "Aktif",
+                Data = new double[] { ActiveHouses }
+            },
+            new ChartSeries
+            {
+                Name = "Pasif",
+                Data = new double[] { PassiveHouses }
+            }
+        };
+    }
+
+    public void Dispose()
+    {
+        HouseState.OnChange -= OnHouseStateChanged;
+    }
+}

@@ -1,6 +1,23 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@inject AuthState Auth
+@inject NavigationManager Nav
+
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+
+        @if (!Auth.IsLoggedIn && !IsLoginPage())
+        {
+            <RedirectToLogin />
+        }
+        else
+        {
+            <RouteView RouteData="@routeData"
+                       DefaultLayout="@typeof(RealEstate.Dashboard.Components.Layout.MainLayout)" />
+        }
+
     </Found>
 </Router>
+
+@code {
+    bool IsLoginPage()
+        => Nav.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase);
+}
